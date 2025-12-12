@@ -1,0 +1,236 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Magic Tools</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Outfit', sans-serif; }
+        .glass {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .tab-btn.active {
+            background-color: #ef4444; /* red-500 */
+            color: white;
+            box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.5);
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-tr from-slate-100 via-red-50 to-orange-50 min-h-screen text-slate-800">
+
+    <!-- Navigation -->
+    <nav class="absolute top-0 left-0 w-full p-6 flex justify-between items-center bg-transparent z-50">
+        <a href="/" class="text-lg font-bold text-slate-500 hover:text-slate-800 transition-colors flex items-center">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+            Back to Transcriber
+        </a>
+        <h1 class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-red-500 to-orange-500">PDF Magic</h1>
+    </nav>
+
+    <div class="container mx-auto px-4 pt-24 pb-12 max-w-5xl h-screen flex flex-col">
+        
+        <div class="flex flex-col md:flex-row gap-6 flex-1 min-h-0">
+
+            <!-- Sidebar / Tools -->
+            <div class="w-full md:w-1/4 flex flex-col gap-4">
+                <div class="glass bg-white/50 rounded-2xl shadow-xl p-4 h-full">
+                    <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Tools</h2>
+                    <div class="space-y-2">
+                        <button onclick="showTab('split')" id="btn-split" class="tab-btn active w-full text-left px-4 py-3 rounded-xl font-medium transition-all text-slate-600 hover:bg-white">
+                            ✂️ Split PDF
+                        </button>
+                        <button onclick="showTab('extract')" id="btn-extract" class="tab-btn w-full text-left px-4 py-3 rounded-xl font-medium transition-all text-slate-600 hover:bg-white">
+                            📝 Extract Text
+                        </button>
+                        <button onclick="showTab('unlock')" id="btn-unlock" class="tab-btn w-full text-left px-4 py-3 rounded-xl font-medium transition-all text-slate-600 hover:bg-white">
+                            🔓 Unlock PDF
+                        </button>
+                        <button onclick="showTab('saved')" id="btn-saved" class="tab-btn w-full text-left px-4 py-3 rounded-xl font-medium transition-all text-slate-600 hover:bg-white">
+                            💾 Saved Texts
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content Area -->
+            <div class="w-full md:w-3/4">
+                <div class="glass bg-white/60 rounded-2xl shadow-xl p-8 h-full overflow-y-auto">
+                    
+                    <!-- Split Tab -->
+                    <div id="tab-split" class="tab-content block">
+                        <h2 class="text-3xl font-bold text-slate-800 mb-2">Split PDF into Parts</h2>
+                        <p class="text-slate-500 mb-8">Split your PDF into equal sized chunks automatically.</p>
+                        
+                        <form id="form-split" class="space-y-6 max-w-md">
+                            {% csrf_token %}
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Upload PDF</label>
+                                <input type="file" name="file" accept=".pdf" required class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100 transition-all border rounded-lg p-2 bg-white">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Number of Parts</label>
+                                <input type="number" name="parts" min="2" value="2" required class="w-full px-4 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500">
+                            </div>
+                            <button type="submit" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-xl shadow-lg transition-transform hover:scale-[1.02]">Split Now</button>
+                        </form>
+                        <div id="result-split" class="mt-8 hidden">
+                            <h3 class="font-bold text-slate-700 mb-2">Result:</h3>
+                            <div id="split-links" class="flex flex-col gap-2"></div>
+                        </div>
+                    </div>
+
+                    <!-- Extract Tab -->
+                    <div id="tab-extract" class="tab-content hidden">
+                        <h2 class="text-3xl font-bold text-slate-800 mb-2">Extract Text</h2>
+                        <p class="text-slate-500 mb-8">Convert PDF pages to plain text and save to database.</p>
+                        
+                        <form id="form-extract" class="space-y-6 max-w-md">
+                            {% csrf_token %}
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Upload PDF</label>
+                                <input type="file" name="file" accept=".pdf" required class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100 transition-all border rounded-lg p-2 bg-white">
+                            </div>
+                            <button type="submit" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-xl shadow-lg transition-transform hover:scale-[1.02]">Extract Text</button>
+                        </form>
+                        <div id="result-extract" class="mt-8 hidden">
+                            <h3 class="font-bold text-slate-700 mb-2">Extracted Text:</h3>
+                            <textarea id="extract-area" readonly class="w-full h-48 p-4 rounded-xl border bg-slate-50 text-sm font-mono"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Unlock Tab -->
+                    <div id="tab-unlock" class="tab-content hidden">
+                        <h2 class="text-3xl font-bold text-slate-800 mb-2">Unlock PDF</h2>
+                        <p class="text-slate-500 mb-8">Attempt to remove password (if empty) or restrictions.</p>
+                        
+                        <form id="form-unlock" class="space-y-6 max-w-md">
+                            {% csrf_token %}
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Upload Locked PDF</label>
+                                <input type="file" name="file" accept=".pdf" required class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition-all border rounded-lg p-2 bg-white">
+                            </div>
+                            <button type="submit" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-xl shadow-lg transition-transform hover:scale-[1.02]">Unlock PDF</button>
+                        </form>
+                        <div id="result-unlock" class="mt-8 hidden">
+                            <h3 class="font-bold text-slate-700 mb-2">Success!</h3>
+                            <a id="unlock-link" href="#" download class="inline-block bg-green-500 text-white px-6 py-2 rounded-lg font-medium">Download Unlocked PDF</a>
+                        </div>
+                    </div>
+
+                    <!-- Saved Texts Tab -->
+                    <div id="tab-saved" class="tab-content hidden">
+                        <h2 class="text-3xl font-bold text-slate-800 mb-6">Saved Texts</h2>
+                        <div class="space-y-4">
+                            {% for text in texts %}
+                            <div id="text-card-{{ text.id }}" class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex justify-between items-start">
+                                <div>
+                                    <h3 class="font-bold text-slate-700">{{ text.title }}</h3>
+                                    <p class="text-xs text-slate-400 mb-2">{{ text.created_at|date:"M d, Y H:i" }}</p>
+                                    <p class="text-sm text-slate-600 line-clamp-2 w-full max-w-lg">{{ text.content }}</p>
+                                </div>
+                                <button onclick="deleteText({{ text.id }})" class="text-red-400 hover:text-red-600 p-2">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                </button>
+                            </div>
+                            {% empty %}
+                            <p class="text-slate-400 text-center py-10">No saved texts found.</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active', 'bg-red-500', 'text-white'));
+            
+            // Show selected
+            document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+            const btn = document.getElementById(`btn-${tabName}`);
+            btn.classList.add('active');
+        }
+
+        // --- SPLIT ---
+        document.getElementById('form-split').onsubmit = async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            try {
+                const res = await fetch('/pdf/split/', { method: 'POST', body: formData });
+                const data = await res.json();
+                if (data.error) throw new Error(data.error);
+                
+                const container = document.getElementById('split-links');
+                container.innerHTML = '';
+                data.files.forEach((url, i) => {
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.target = '_blank';
+                    link.className = 'block p-3 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors border border-red-100';
+                    link.innerHTML = `📄 Download Part ${i+1}`;
+                    container.appendChild(link);
+                });
+                document.getElementById('result-split').classList.remove('hidden');
+            } catch (err) { alert(err.message); }
+        };
+
+        // --- EXTRACT ---
+        document.getElementById('form-extract').onsubmit = async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            try {
+                const res = await fetch('/pdf/extract/', { method: 'POST', body: formData });
+                const data = await res.json();
+                if (data.error) throw new Error(data.error);
+                
+                document.getElementById('extract-area').value = data.text;
+                document.getElementById('result-extract').classList.remove('hidden');
+                // Refresh is tricky since saved tab is server-rendered, for SPA feel we might just append or ask user to reload for list
+            } catch (err) { alert(err.message); }
+        };
+
+        // --- UNLOCK ---
+        document.getElementById('form-unlock').onsubmit = async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            try {
+                const res = await fetch('/pdf/unlock/', { method: 'POST', body: formData });
+                const data = await res.json();
+                if (data.error) throw new Error(data.error);
+                
+                const link = document.getElementById('unlock-link');
+                link.href = data.file;
+                document.getElementById('result-unlock').classList.remove('hidden');
+            } catch (err) { alert(err.message); }
+        };
+
+        // --- DELETE ---
+        async function deleteText(id) {
+            if(!confirm('Are you sure?')) return;
+            const csrf = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            try {
+                const res = await fetch(`/pdf/delete-text/${id}/`, { 
+                    method: 'POST',
+                    headers: {'X-CSRFToken': csrf}
+                });
+                if (res.ok) {
+                    document.getElementById(`text-card-${id}`).remove();
+                } else {
+                    alert('Failed to delete');
+                }
+            } catch (err) { alert(err.message); }
+        }
+    </script>
+</body>
+</html>

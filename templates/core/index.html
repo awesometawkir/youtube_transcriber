@@ -1,0 +1,404 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Transcriber Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .glass {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+        .loader-sm {
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #3b82f6;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-indigo-100 via-purple-100 to-pink-100 min-h-screen text-slate-800">
+
+    <div class="container mx-auto px-4 py-8 max-w-5xl h-screen flex flex-col">
+        
+        <!-- Header -->
+        <div class="text-center mb-8 flex-none">
+            <h1 class="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 mb-2">
+                AI Transcriber Pro
+            </h1>
+            <p class="text-slate-600">Batch process YouTube videos and Audio files.</p>
+            <div class="mt-4">
+                <a href="/pdf/" class="inline-flex items-center px-4 py-2 rounded-full bg-white border border-slate-200 shadow-sm text-sm font-medium text-slate-600 hover:text-red-500 hover:border-red-200 transition-all">
+                    <span>Switch to PDF Tools</span>
+                    <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
+                </a>
+                <a href="/ai/" class="inline-flex items-center px-4 py-2 rounded-full bg-white border border-slate-200 shadow-sm text-sm font-medium text-slate-600 hover:text-indigo-500 hover:border-indigo-200 transition-all ml-2">
+                    <span>✨ AI Studio</span>
+                </a>
+            </div>
+        </div>
+
+        <div class="flex flex-col md:flex-row gap-6 flex-1 min-h-0">
+            
+            <!-- Left Panel: Input -->
+            <div class="w-full md:w-1/3 flex flex-col gap-4 overflow-y-auto pr-2">
+                <div class="glass bg-white/60 rounded-2xl shadow-xl p-6">
+                    <!-- Tabs -->
+                    <div class="flex justify-center mb-6 bg-slate-100 p-1 rounded-xl">
+                        <button onclick="switchTab('youtube')" id="tab-youtube" class="flex-1 px-4 py-2 rounded-lg font-medium text-sm transition-all duration-300 bg-white text-indigo-600 shadow-sm">
+                            YouTube Links
+                        </button>
+                        <button onclick="switchTab('file')" id="tab-file" class="flex-1 px-4 py-2 rounded-lg font-medium text-sm transition-all duration-300 text-slate-500 hover:text-slate-700">
+                            Files Upload
+                        </button>
+                    </div>
+
+                    <form id="transcribeForm" class="space-y-4">
+                        {% csrf_token %}
+                        <input type="hidden" name="source_type" id="source_type" value="youtube">
+
+                        <!-- YouTube Input -->
+                        <div id="input-youtube" class="block">
+                            <label class="block text-xs font-semibold uppercase text-slate-500 mb-2 tracking-wider">YouTube URLs</label>
+                            <textarea name="youtube_urls" id="youtube_urls" placeholder="Paste multiple links here (one per line)..." 
+                                class="w-full h-32 px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 transition-all outline-none resize-none text-sm"></textarea>
+                            <p class="text-xs text-slate-400 mt-1 text-right">One link per line</p>
+                        </div>
+
+                        <!-- File Input -->
+                        <div id="input-file" class="hidden">
+                            <label class="block text-xs font-semibold uppercase text-slate-500 mb-2 tracking-wider">Select Files</label>
+                            <div class="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:border-indigo-400 transition-colors bg-white/40 cursor-pointer group" onclick="document.getElementById('file-upload').click()">
+                                <input type="file" name="file" id="file-upload" class="hidden" multiple onchange="updateFileCount(this)">
+                                <div class="text-slate-500 group-hover:text-indigo-500 transition-colors">
+                                    <svg class="w-10 h-10 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                                    <span id="file-label" class="text-sm font-medium">Click to browse</span>
+                                    <p class="text-[10px] mt-1 opacity-70">Multiple selection allowed</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Settings -->
+                        <div class="pt-2 border-t border-slate-200/50">
+                            <label class="block text-xs font-semibold uppercase text-slate-500 mb-2 tracking-wider">Output Format</label>
+                            <div class="flex space-x-4">
+                                <label class="flex items-center space-x-2 cursor-pointer group">
+                                    <input type="radio" name="output_format" value="txt" checked class="form-radio text-indigo-600 focus:ring-indigo-500 h-4 w-4">
+                                    <span class="text-sm text-slate-600 group-hover:text-slate-800">Plain Text</span>
+                                </label>
+                                <label class="flex items-center space-x-2 cursor-pointer group">
+                                    <input type="radio" name="output_format" value="srt" class="form-radio text-indigo-600 focus:ring-indigo-500 h-4 w-4">
+                                    <span class="text-sm text-slate-600 group-hover:text-slate-800">Subtitles (.srt)</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <button type="submit" id="submit-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center mt-2">
+                            <span>Add to Queue</span>
+                            <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Right Panel: Queue & Results -->
+            <div class="w-full md:w-2/3 flex flex-col gap-4 min-h-0">
+                <div class="glass bg-white/60 rounded-2xl shadow-xl flex-1 flex flex-col overflow-hidden">
+                    <div class="p-4 border-b border-slate-200/60 flex justify-between items-center bg-white/40 backdrop-blur-md">
+                        <h2 class="font-bold text-lg text-slate-700 flex items-center">
+                            <span class="bg-indigo-100 text-indigo-600 p-1.5 rounded-lg mr-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                            </span>
+                            Processing Queue
+                        </h2>
+                        <span id="queue-status" class="text-xs font-medium px-2 py-1 bg-slate-100 rounded-full text-slate-500">Idle</span>
+                    </div>
+                    
+                    <div id="results-container" class="flex-1 overflow-y-auto p-4 space-y-4">
+                        <!-- Empty State -->
+                        <div id="empty-state" class="h-full flex flex-col items-center justify-center text-slate-400 opacity-60">
+                            <svg class="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                            <p class="text-sm">Queue is empty. Add links or files to start.</p>
+                        </div>
+                        <!-- Items will be injected here -->
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        let taskQueue = [];
+        let isProcessing = false;
+
+        function switchTab(tab) {
+            const youtubeInput = document.getElementById('input-youtube');
+            const fileInput = document.getElementById('input-file');
+            const sourceType = document.getElementById('source_type');
+            
+            const btnYoutube = document.getElementById('tab-youtube');
+            const btnFile = document.getElementById('tab-file');
+
+            if (tab === 'youtube') {
+                youtubeInput.classList.remove('hidden');
+                fileInput.classList.add('hidden');
+                sourceType.value = 'youtube';
+                
+                btnYoutube.classList.add('bg-white', 'text-indigo-600', 'shadow-sm');
+                btnYoutube.classList.remove('text-slate-500');
+                
+                btnFile.classList.remove('bg-white', 'text-indigo-600', 'shadow-sm');
+                btnFile.classList.add('text-slate-500');
+            } else {
+                youtubeInput.classList.add('hidden');
+                fileInput.classList.remove('hidden');
+                sourceType.value = 'file';
+
+                btnFile.classList.add('bg-white', 'text-indigo-600', 'shadow-sm');
+                btnFile.classList.remove('text-slate-500');
+                
+                btnYoutube.classList.remove('bg-white', 'text-indigo-600', 'shadow-sm');
+                btnYoutube.classList.add('text-slate-500');
+            }
+        }
+
+        function updateFileCount(input) {
+            const label = document.getElementById('file-label');
+            if (input.files && input.files.length > 0) {
+                label.textContent = `${input.files.length} file(s) selected`;
+                label.classList.add('text-indigo-600');
+            } else {
+                label.textContent = "Click to browse";
+                label.classList.remove('text-indigo-600');
+            }
+        }
+
+        function createResultCard(id, title, type) {
+            const div = document.createElement('div');
+            div.id = `card-${id}`;
+            div.className = "bg-white rounded-xl p-4 shadow-sm border border-slate-100 transition-all animate-fade-in";
+            div.innerHTML = `
+                <div class="flex justify-between items-start mb-3">
+                    <div class="flex items-center overflow-hidden">
+                        <div class="p-2 rounded-lg ${type === 'youtube' ? 'bg-red-50 text-red-500' : 'bg-blue-50 text-blue-500'} mr-3 flex-shrink-0">
+                            ${type === 'youtube' 
+                                ? '<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/></svg>'
+                                : '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 3-2 3-2zm0 0v-4.991m12 11c0 1.105-1.343 2-3 2s-3-.895-3-2 3-2 3-2zm0 0v-4.991"></path></svg>'
+                            }
+                        </div>
+                        <div class="min-w-0">
+                            <h3 class="font-semibold text-sm text-slate-800 truncate" title="${title}">${title}</h3>
+                            <p class="text-xs text-slate-500 flex items-center mt-0.5">
+                                <span id="status-${id}" class="text-amber-500 font-medium">Pending...</span>
+                            </p>
+                        </div>
+                    </div>
+                    <div id="actions-${id}" class="flex-shrink-0 ml-2">
+                        <!-- Actions injected later -->
+                    </div>
+                </div>
+                <div id="content-area-${id}" class="hidden mt-3">
+                    <textarea readonly class="w-full h-32 p-3 text-xs font-mono bg-slate-50 rounded-lg border border-slate-200 resize-none focus:outline-none mb-2"></textarea>
+                </div>
+            `;
+            return div;
+        }
+
+        document.getElementById('transcribeForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const sourceType = document.getElementById('source_type').value;
+            const outputFormat = document.querySelector('input[name="output_format"]:checked').value;
+            const emptyState = document.getElementById('empty-state');
+            
+            if(emptyState) emptyState.classList.add('hidden');
+
+            if (sourceType === 'youtube') {
+                const urls = document.getElementById('youtube_urls').value.split('\n').filter(u => u.trim());
+                urls.forEach(url => {
+                    addTask('youtube', url, null, outputFormat);
+                });
+                document.getElementById('youtube_urls').value = ""; // Clear
+            } else {
+                const fileInput = document.getElementById('file-upload');
+                Array.from(fileInput.files).forEach(file => {
+                    addTask('file', file.name, file, outputFormat);
+                });
+                fileInput.value = ""; // Clear
+                updateFileCount(fileInput);
+            }
+
+            processQueue();
+        });
+
+        function addTask(type, name, fileObj, format) {
+            const id = Date.now() + Math.random().toString(36).substr(2, 9);
+            const container = document.getElementById('results-container');
+            
+            const card = createResultCard(id, name, type);
+            container.prepend(card); // Add to top
+
+            taskQueue.push({
+                id: id,
+                type: type,
+                data: type === 'youtube' ? name : fileObj,
+                format: format,
+                displayName: name
+            });
+        }
+
+        async function processQueue() {
+            if (isProcessing || taskQueue.length === 0) return;
+
+            isProcessing = true;
+            document.getElementById('queue-status').textContent = "Processing...";
+            document.getElementById('queue-status').classList.replace('text-slate-500', 'text-indigo-600');
+            document.getElementById('queue-status').classList.replace('bg-slate-100', 'bg-indigo-100');
+
+            const task = taskQueue.shift();
+            const statusEl = document.getElementById(`status-${task.id}`);
+            const actionsEl = document.getElementById(`actions-${task.id}`);
+            
+            // Initial Status
+            statusEl.innerHTML = `
+                <div class="w-full max-w-[200px]">
+                    <div class="flex justify-between text-[10px] uppercase font-bold text-slate-500 mb-1">
+                        <span id="label-${task.id}">Starting</span>
+                        <span id="pct-${task.id}">0%</span>
+                    </div>
+                    <div class="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                        <div id="bar-${task.id}" class="h-full bg-indigo-500 transition-all duration-300 w-0"></div>
+                    </div>
+                </div>`;
+
+            const formData = new FormData();
+            formData.append('source_type', task.type);
+            formData.append('output_format', task.format);
+            
+            if (task.type === 'youtube') {
+                formData.append('youtube_url', task.data);
+            } else {
+                formData.append('file', task.data);
+            }
+
+            try {
+                // Step 1: Start Job
+                const startResponse = await fetch('/transcribe/', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    }
+                });
+
+                const startData = await startResponse.json();
+                if (!startResponse.ok) throw new Error(startData.error || 'Failed to start');
+                
+                const jobId = startData.job_id;
+
+                // Step 2: Poll Status
+                await pollStatus(jobId, task.id, task.format);
+
+                // Success State (Handled in pollStatus)
+
+            } catch (error) {
+                statusEl.innerHTML = `<span class="text-red-500 font-medium text-xs">Error: ${error.message}</span>`;
+            }
+
+            isProcessing = false;
+            
+            if (taskQueue.length > 0) {
+                processQueue();
+            } else {
+                document.getElementById('queue-status').textContent = "Idle";
+                document.getElementById('queue-status').classList.replace('text-indigo-600', 'text-slate-500');
+                document.getElementById('queue-status').classList.replace('bg-indigo-100', 'bg-slate-100');
+            }
+        }
+
+        async function pollStatus(jobId, taskId, format) {
+            return new Promise((resolve, reject) => {
+                const interval = setInterval(async () => {
+                    try {
+                        const response = await fetch(`/status/${jobId}/`);
+                        const data = await response.json();
+
+                        const labelEl = document.getElementById(`label-${taskId}`);
+                        const pctEl = document.getElementById(`pct-${taskId}`);
+                        const barEl = document.getElementById(`bar-${taskId}`);
+                        const statusEl = document.getElementById(`status-${taskId}`);
+                        const contentArea = document.getElementById(`content-area-${taskId}`);
+                        const actionsEl = document.getElementById(`actions-${taskId}`);
+
+                        if (data.status === 'error') {
+                            clearInterval(interval);
+                            reject(new Error(data.message));
+                            return;
+                        }
+
+                        // Update UI
+                        if (labelEl) labelEl.textContent = data.message;
+                        if (pctEl) pctEl.textContent = `${data.progress}%`;
+                        if (barEl) barEl.style.width = `${data.progress}%`;
+
+                        if (data.status === 'completed') {
+                            clearInterval(interval);
+                            
+                            // Finalize UI
+                            statusEl.innerHTML = `<span class="text-green-500 font-bold text-xs flex items-center"><svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Done</span>`;
+                            
+                            contentArea.classList.remove('hidden');
+                            contentArea.querySelector('textarea').value = data.result;
+
+                            const btn = document.createElement('button');
+                            btn.className = "text-slate-400 hover:text-indigo-600 transition-colors p-1";
+                            btn.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>`;
+                            btn.onclick = () => downloadText(data.result, `transcription_${taskId}.${format}`);
+                            actionsEl.innerHTML = ''; // Clear old buttons
+                            actionsEl.appendChild(btn);
+                            
+                            resolve();
+                        }
+
+                    } catch (e) {
+                        clearInterval(interval);
+                        reject(e);
+                    }
+                }, 1000); // Poll every 1 second
+            });
+        }
+
+        function downloadText(text, filename) {
+            const blob = new Blob([text], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        }
+    </script>
+</body>
+</html>

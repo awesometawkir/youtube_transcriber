@@ -1,0 +1,22 @@
+[Unit]
+Description=Django AI Studio Service
+After=network.target
+
+[Service]
+# Adjust the User to your WSL user if needed, or run as root (less secure but easier for personal WSL)
+# For WSL 2, often standard user is the first one created (UID 1000).
+# We will use 'root' here to avoid permission issues for now unless user specifies, 
+# or we can try to find the USER. 'User=root' is safer for initial setup in WSL.
+User=root
+Group=root
+
+WorkingDirectory=/mnt/d/project/youtube
+Environment="PATH=/mnt/d/project/youtube/.venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+ExecStart=/mnt/d/project/youtube/.venv/bin/python manage.py runserver 0.0.0.0:8010
+
+# Restart cleanly if it dies
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
