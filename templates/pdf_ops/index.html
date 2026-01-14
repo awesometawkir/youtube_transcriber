@@ -100,7 +100,11 @@
                         </form>
                         <div id="result-extract" class="mt-8 hidden">
                             <h3 class="font-bold text-slate-700 mb-2">Extracted Text:</h3>
-                            <textarea id="extract-area" readonly class="w-full h-48 p-4 rounded-xl border bg-slate-50 text-sm font-mono"></textarea>
+                            <textarea id="extract-area" readonly class="w-full h-48 p-4 rounded-xl border bg-slate-50 text-sm font-mono mb-4"></textarea>
+                            <button id="btn-download-extracted" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 rounded-xl shadow-lg transition-transform hover:scale-[1.02] flex items-center justify-center gap-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                Download Text File
+                            </button>
                         </div>
                     </div>
 
@@ -132,7 +136,10 @@
                                 <div>
                                     <h3 class="font-bold text-slate-700">{{ text.title }}</h3>
                                     <p class="text-xs text-slate-400 mb-2">{{ text.created_at|date:"M d, Y H:i" }}</p>
-                                    <p class="text-sm text-slate-600 line-clamp-2 w-full max-w-lg">{{ text.content }}</p>
+                                    <p class="text-sm text-slate-600 line-clamp-2 w-full max-w-lg mb-2">{{ text.content }}</p>
+                                    <button onclick='downloadText("{{ text.title|escapejs }}.txt", `{{ text.content|escapejs }}`)' class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1 rounded-full transition-colors">
+                                        ⬇ Download Text
+                                    </button>
                                 </div>
                                 <button onclick="deleteText({{ text.id }})" class="text-red-400 hover:text-red-600 p-2">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
@@ -151,6 +158,16 @@
 
     <!-- Scripts -->
     <script>
+        function downloadText(filename, content) {
+            const element = document.createElement('a');
+            const blob = new Blob([content], {type: 'text/plain'});
+            element.href = URL.createObjectURL(blob);
+            element.download = filename;
+            document.body.appendChild(element);
+            element.click();
+            document.body.removeChild(element);
+        }
+
         function showTab(tabName) {
             // Hide all tabs
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
@@ -196,6 +213,13 @@
                 
                 document.getElementById('extract-area').value = data.text;
                 document.getElementById('result-extract').classList.remove('hidden');
+                
+                // Update download button
+                document.getElementById('btn-download-extracted').onclick = () => {
+                    const filename = formData.get('file').name.replace('.pdf', '.txt');
+                    downloadText(filename, data.text);
+                };
+                
                 // Refresh is tricky since saved tab is server-rendered, for SPA feel we might just append or ask user to reload for list
             } catch (err) { alert(err.message); }
         };

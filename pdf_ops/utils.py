@@ -1,6 +1,6 @@
-
 import os
-from pypdf import PdfReader, PdfWriter
+import pdfplumber
+from PyPDF2 import PdfReader, PdfWriter
 
 def get_pdf_info(file_path):
     try:
@@ -12,9 +12,11 @@ def get_pdf_info(file_path):
 def extract_pdf_text(file_path):
     text = ""
     try:
-        reader = PdfReader(file_path)
-        for page in reader.pages:
-            text += page.extract_text() + "\n\n"
+        with pdfplumber.open(file_path) as pdf:
+            for page in pdf.pages:
+                extracted = page.extract_text()
+                if extracted:
+                    text += extracted + "\n\n"
         return text.strip()
     except Exception as e:
         return str(e)
